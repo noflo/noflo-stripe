@@ -2,7 +2,7 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "licenses": [
     {
       "type": "MIT",
@@ -24,7 +24,7 @@
   "noflo": {
     "components": {
 			"CreateCharge": "./components/CreateCharge.coffee",
-			"CreateCharge": "./components/CreateCustomer.coffee"
+			"CreateCustomer": "./components/CreateCustomer.coffee"
 		}
   },
   "scripts": {
