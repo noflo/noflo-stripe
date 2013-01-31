@@ -23,7 +23,8 @@
   },
   "noflo": {
     "components": {
-			"CreateCharge": "./components/CreateCharge.coffee"
+			"CreateCharge": "./components/CreateCharge.coffee",
+			"CreateCharge": "./components/CreateCustomer.coffee"
 		}
   },
   "scripts": {

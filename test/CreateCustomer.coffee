@@ -1,4 +1,4 @@
-readenv = require "../components/CreateCharge"
+readenv = require "../components/CreateCustomer"
 socket = require('noflo').internalSocket
 
 setupComponent = ->
@@ -39,14 +39,14 @@ exports['test invalid API key'] = (test) ->
 
   ins.send
     currency: "usd"
-    amount: 1000000
 
-exports['test currency check'] = (test) ->
+
+exports['test email check'] = (test) ->
   [c, ins, apiKey, out, err] = setupComponent()
   err.once 'data', (data) ->
     test.ok data
     test.ok data.message
-    test.equals data.message, 'Missing currency'
+    test.equals data.message, 'Missing email'
 
   err.once 'disconnect', ->
     test.done()
@@ -54,24 +54,10 @@ exports['test currency check'] = (test) ->
   apiKey.send "Foo"
 
   ins.send
-    amount: 1000000
-    
-exports['test amount check'] = (test) ->
-  [c, ins, apiKey, out, err] = setupComponent()
-  err.once 'data', (data) ->
-    test.ok data
-    test.ok data.message
-    test.equals data.message, 'Missing amount'
+    amount: 1000000    
 
-  err.once 'disconnect', ->
-    test.done()
-
-  apiKey.send "Foo"
-
-  ins.send
-    currency: "EUR"
-    
-exports['test creating a charge'] = (test) ->
+        
+exports['test creating a customer'] = (test) ->
   unless process.env.STRIPE_TOKEN
     test.fail null, null, 'No STRIPE_TOKEN env variable set'
     test.done()
@@ -79,29 +65,23 @@ exports['test creating a charge'] = (test) ->
       
   [c, ins, apiKey, out, err] = setupComponent()
   out.once 'data', (data) ->
+    console.log data
     test.ok data
     test.ok data.id
     test.ok data.object
-    test.equals data.object, 'charge'
-    test.equals data.paid, true
-    test.equals data.amount, 50
-    test.equals data.currency, 'usd'
+    test.equals data.object, 'customer'
+    test.equals data.email, 'foo@example.com'
+
 
   out.once 'disconnect', ->
     test.done()
     
   err.once 'data', (data) ->
-    test.fail null, null, new Error "Failed to create a charge"
+    test.fail null, null, new Error "Failed to create a customer"
     test.done()
 
   apiKey.send process.env.STRIPE_TOKEN
 
   # Charge 50c
   ins.send
-    currency: "usd"
-    amount: 50
-    card:
-      number: "4242424242424242"
-      exp_month: 12
-      exp_year:  2020
-      name: "T. Ester"
+    email: "foo@example.com"
