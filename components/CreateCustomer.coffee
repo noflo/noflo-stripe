@@ -31,7 +31,7 @@ class CreateCustomer extends noflo.AsyncComponent
     @checkRequired customerData, (err) =>
       return callback err if err
       
-      # Create Stripe charge
+      # Create Stripe customer
       @client.customers.create customerData, (err, customer) =>
         return callback err if err
         @outPorts.out.send customer

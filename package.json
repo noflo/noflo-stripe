@@ -13,8 +13,8 @@
     "node": ">=0.6.0"
   },
   "dependencies": {
-    "noflo": "0.3.x",
-    "stripe": "~1.2.0"
+    "noflo": "0.4.x",
+    "stripe": "~2.3.0"
   },
   "devDependencies": {
     "nodeunit": ">=0.6.0",
@@ -22,9 +22,11 @@
     "coffee-script": "1.4.x"
   },
   "noflo": {
+		"icon": "credit-card",
     "components": {
 			"CreateCharge": "./components/CreateCharge.coffee",
-			"CreateCustomer": "./components/CreateCustomer.coffee"
+			"CreateCustomer": "./components/CreateCustomer.coffee",
+			"RetrieveToken": "./components/RetrieveToken.coffee"
 		}
   },
   "scripts": {
