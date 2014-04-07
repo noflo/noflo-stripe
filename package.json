@@ -13,7 +13,7 @@
     "node": ">=0.6.0"
   },
   "dependencies": {
-    "noflo": "0.4.x",
+    "noflo": "0.5.x",
     "stripe": "~2.3.0"
   },
   "devDependencies": {
