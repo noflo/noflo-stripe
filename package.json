@@ -2,7 +2,7 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "licenses": [
     {
       "type": "MIT",
@@ -22,12 +22,12 @@
     "coffee-script": "1.4.x"
   },
   "noflo": {
-		"icon": "credit-card",
+    "icon": "credit-card",
     "components": {
-			"CreateCharge": "./components/CreateCharge.coffee",
-			"CreateCustomer": "./components/CreateCustomer.coffee",
-			"RetrieveToken": "./components/RetrieveToken.coffee"
-		}
+      "CreateCharge": "components/CreateCharge.coffee",
+      "CreateCustomer": "components/CreateCustomer.coffee",
+      "RetrieveToken": "components/RetrieveToken.coffee"
+    }
   },
   "scripts": {
     "pretest": "./node_modules/.bin/coffeelint -r components",
