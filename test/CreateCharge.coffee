@@ -7,9 +7,9 @@ setupComponent = ->
   apiKey = socket.createSocket()
   out = socket.createSocket()
   err = socket.createSocket()
-  c.inPorts.in.attach ins
+  c.inPorts.data.attach ins
   c.inPorts.apikey.attach apiKey
-  c.outPorts.out.attach out
+  c.outPorts.charge.attach out
   c.outPorts.error.attach err
   [c, ins, apiKey, out, err]
 
@@ -55,7 +55,7 @@ exports['test currency check'] = (test) ->
 
   ins.send
     amount: 1000000
-    
+
 exports['test amount check'] = (test) ->
   [c, ins, apiKey, out, err] = setupComponent()
   err.once 'data', (data) ->
@@ -70,13 +70,13 @@ exports['test amount check'] = (test) ->
 
   ins.send
     currency: "EUR"
-    
+
 exports['test creating a charge'] = (test) ->
   unless process.env.STRIPE_TOKEN
     test.fail null, null, 'No STRIPE_TOKEN env variable set'
     test.done()
     return
-      
+
   [c, ins, apiKey, out, err] = setupComponent()
   out.once 'data', (data) ->
     test.ok data
@@ -89,7 +89,7 @@ exports['test creating a charge'] = (test) ->
 
   out.once 'disconnect', ->
     test.done()
-    
+
   err.once 'data', (data) ->
     test.fail null, null, new Error "Failed to create a charge"
     test.done()

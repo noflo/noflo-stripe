@@ -7,9 +7,9 @@ setupComponent = ->
   apiKey = socket.createSocket()
   out = socket.createSocket()
   err = socket.createSocket()
-  c.inPorts.in.attach ins
+  c.inPorts.id.attach ins
   c.inPorts.apikey.attach apiKey
-  c.outPorts.out.attach out
+  c.outPorts.token.attach out
   c.outPorts.error.attach err
   [c, ins, apiKey, out, err]
 
@@ -22,7 +22,7 @@ exports['test API key check'] = (test) ->
 
   err.once 'disconnect', ->
     test.done()
-    
+
   ins.send 'foo bar'
 
 exports['test invalid API key'] = (test) ->
@@ -36,13 +36,13 @@ exports['test invalid API key'] = (test) ->
   apiKey.send "Foo"
 
   ins.send "usd"
-    
+
 exports['test retreiving token'] = (test) ->
   unless process.env.STRIPE_TOKEN
     test.fail null, null, 'No STRIPE_TOKEN env variable set'
     test.done()
     return
-      
+
   [c, ins, apiKey, out, err] = setupComponent()
   out.once 'data', (data) ->
     test.ok data
@@ -51,9 +51,9 @@ exports['test retreiving token'] = (test) ->
 
   out.once 'disconnect', ->
     test.done()
-    
+
   err.once 'data', (data) ->
-    test.fail null, null, new Error "Failed to retreive a token"
+    test.fail null, null, data
     test.done()
 
   apiKey.send process.env.STRIPE_TOKEN

@@ -7,9 +7,9 @@ setupComponent = ->
   apiKey = socket.createSocket()
   out = socket.createSocket()
   err = socket.createSocket()
-  c.inPorts.in.attach ins
+  c.inPorts.data.attach ins
   c.inPorts.apikey.attach apiKey
-  c.outPorts.out.attach out
+  c.outPorts.customer.attach out
   c.outPorts.error.attach err
   [c, ins, apiKey, out, err]
 
@@ -54,15 +54,15 @@ exports['test email check'] = (test) ->
   apiKey.send "Foo"
 
   ins.send
-    amount: 1000000    
+    amount: 1000000
 
-        
+
 exports['test creating a customer'] = (test) ->
   unless process.env.STRIPE_TOKEN
     test.fail null, null, 'No STRIPE_TOKEN env variable set'
     test.done()
     return
-      
+
   [c, ins, apiKey, out, err] = setupComponent()
   out.once 'data', (data) ->
     console.log data
@@ -75,7 +75,7 @@ exports['test creating a customer'] = (test) ->
 
   out.once 'disconnect', ->
     test.done()
-    
+
   err.once 'data', (data) ->
     test.fail null, null, new Error "Failed to create a customer"
     test.done()

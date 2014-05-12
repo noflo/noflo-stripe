@@ -6,38 +6,37 @@ class CreateCharge extends noflo.AsyncComponent
     @client = null
 
     @inPorts =
-      in: new noflo.Port
-      apikey: new noflo.Port
+      data: new noflo.Port 'object'
+      apikey: new noflo.Port 'string'
     @outPorts =
-      out: new noflo.Port
-      error: new noflo.Port
+      charge: new noflo.Port 'object'
+      error: new noflo.Port 'object'
 
     @inPorts.apikey.on 'data', (data) =>
       @client = stripe data
 
-    super()
-    
+    super 'data', 'charge'
+
   checkRequired: (chargeData, callback) ->
     unless chargeData.amount
       return callback new Error "Missing amount"
     unless chargeData.currency
       return callback new Error "Missing currency"
-    do callback
+    callback()
 
   doAsync: (chargeData, callback) ->
     unless @client
-      callback new Error "Missing Stripe API key"
-      return
-    
+      return callback new Error "Missing Stripe API key"
+
     # Validate inputs
     @checkRequired chargeData, (err) =>
       return callback err if err
-      
+
       # Create Stripe charge
       @client.charges.create chargeData, (err, charge) =>
         return callback err if err
-        @outPorts.out.send charge
-        @outPorts.out.disconnect()
+        @outPorts.charge.send charge
+        @outPorts.charge.disconnect()
         callback()
 
 exports.getComponent = -> new CreateCharge
