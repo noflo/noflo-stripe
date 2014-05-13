@@ -2,35 +2,46 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "licenses": [
     {
       "type": "MIT",
       "url": "https://github.com/bergie/noflo/raw/master/LICENSE"
     }
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/svetly/noflo-stripe.git"
+  },
   "engines": {
     "node": ">=0.6.0"
   },
   "dependencies": {
     "noflo": "0.5.x",
-    "stripe": "~2.3.0"
+    "stripe": "2.5.x",
+    "uuid": "1.4.x"
   },
   "devDependencies": {
-    "nodeunit": ">=0.6.0",
     "coffeelint": "*",
-    "coffee-script": "1.4.x"
+    "coffee-script": "1.7.x",
+    "mocha": "1.x",
+    "chai": "1.x"
   },
   "noflo": {
     "icon": "credit-card",
     "components": {
+      "CreateCardToken": "components/CreateCardToken.coffee",
       "CreateCharge": "components/CreateCharge.coffee",
       "CreateCustomer": "components/CreateCustomer.coffee",
-      "RetrieveToken": "components/RetrieveToken.coffee"
+      "GetCharge": "components/GetCharge.coffee",
+      "ListCharges": "components/ListCharges.coffee",
+      "RefundCharge": "components/RefundCharge.coffee",
+      "RetrieveToken": "components/RetrieveToken.coffee",
+      "UpdateCharge": "components/UpdateCharge.coffee"
     }
   },
   "scripts": {
-    "pretest": "./node_modules/.bin/coffeelint -r components",
-    "test": "./node_modules/.bin/nodeunit test"
+    "pretest": "./node_modules/.bin/coffeelint -r components spec",
+    "test": "mocha --compilers coffee:coffee-script/register --require coffee-script/register -R spec -t 10000 spec/*.coffee"
   }
 }

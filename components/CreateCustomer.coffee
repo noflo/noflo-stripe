@@ -6,36 +6,35 @@ class CreateCustomer extends noflo.AsyncComponent
     @client = null
 
     @inPorts =
-      in: new noflo.Port
-      apikey: new noflo.Port
+      data: new noflo.Port 'object'
+      apikey: new noflo.Port 'string'
     @outPorts =
-      out: new noflo.Port
-      error: new noflo.Port
+      customer: new noflo.Port 'object'
+      error: new noflo.Port 'object'
 
     @inPorts.apikey.on 'data', (data) =>
       @client = stripe data
 
-    super()
-    
+    super 'data', 'customer'
+
   checkRequired: (customerData, callback) ->
     unless customerData.email
       return callback new Error "Missing email"
-    do callback
+    callback()
 
   doAsync: (customerData, callback) ->
     unless @client
-      callback new Error "Missing Stripe API key"
-      return
-    
+      return callback new Error "Missing or invalid Stripe API key"
+
     # Validate inputs
     @checkRequired customerData, (err) =>
       return callback err if err
-      
+
       # Create Stripe customer
       @client.customers.create customerData, (err, customer) =>
         return callback err if err
-        @outPorts.out.send customer
-        @outPorts.out.disconnect()
+        @outPorts.customer.send customer
+        @outPorts.customer.disconnect()
         callback()
 
 exports.getComponent = -> new CreateCustomer
