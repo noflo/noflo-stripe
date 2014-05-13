@@ -30,6 +30,7 @@
   "noflo": {
     "icon": "credit-card",
     "components": {
+      "CreateCardToken": "components/CreateCardToken.coffee",
       "CreateCharge": "components/CreateCharge.coffee",
       "CreateCustomer": "components/CreateCustomer.coffee",
       "GetCharge": "components/GetCharge.coffee",
@@ -40,7 +41,7 @@
     }
   },
   "scripts": {
-    "pretest": "./node_modules/.bin/coffeelint -r components",
-    "test": "mocha --compilers coffee:coffee-script/register --require coffee-script/register -R spec -t 8000 spec/*.coffee"
+    "pretest": "./node_modules/.bin/coffeelint -r components spec",
+    "test": "mocha --compilers coffee:coffee-script/register --require coffee-script/register -R spec -t 10000 spec/*.coffee"
   }
 }

@@ -211,7 +211,8 @@ describe 'Charges', ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.id).to.equal charge.id
         chai.expect(data.refunds).to.have.length 2
-        chai.expect(data.refunds[1].amount).to.equal 30
+        # App fee is not refunded by default
+        chai.expect(data.refunds[1].amount).to.be.at.least 20
         done()
 
       ins.send charge.id
