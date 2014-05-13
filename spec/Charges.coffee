@@ -9,6 +9,7 @@ describe 'Charges', ->
   newGetCharge = require('../components/GetCharge').getComponent
   newUpdateCharge = require('../components/UpdateCharge').getComponent
   newRefundCharge = require('../components/RefundCharge').getComponent
+  newListCharges = require('../components/ListCharges').getComponent
 
   charge = null
 
@@ -214,3 +215,37 @@ describe 'Charges', ->
         done()
 
       ins.send charge.id
+
+  describe 'ListCharges component', ->
+    c = newListCharges()
+    ins = noflo.internalSocket.createSocket()
+    key = noflo.internalSocket.createSocket()
+    created = noflo.internalSocket.createSocket()
+    out = noflo.internalSocket.createSocket()
+    err = noflo.internalSocket.createSocket()
+    c.inPorts.exec.attach ins
+    c.inPorts.apikey.attach key
+    c.inPorts.created.attach created
+    c.outPorts.charges.attach out
+    c.outPorts.error.attach err
+
+    it 'should fail without an API key', (done) ->
+      err.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.message).to.contain 'API key'
+        done()
+
+      ins.send true
+
+    it 'should output an array of all charges', (done) ->
+      # Set API key here as we didn't do it before
+      key.send apiKey
+
+      out.once 'data', (data) ->
+        chai.expect(data).to.be.an 'array'
+        chai.expect(data).to.have.length.above 0
+        done()
+
+      ins.send true
+
+    # TODO test other ListCharges parameters
