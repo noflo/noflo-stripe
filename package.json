@@ -32,7 +32,10 @@
     "components": {
       "CreateCharge": "components/CreateCharge.coffee",
       "CreateCustomer": "components/CreateCustomer.coffee",
-      "RetrieveToken": "components/RetrieveToken.coffee"
+      "GetCharge": "components/GetCharge.coffee",
+      "RefundCharge": "components/RefundCharge.coffee",
+      "RetrieveToken": "components/RetrieveToken.coffee",
+      "UpdateCharge": "components/UpdateCharge.coffee"
     }
   },
   "scripts": {

@@ -7,6 +7,8 @@ describe 'Charges', ->
   apiKey = process.env.STRIPE_TOKEN or 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'
   newCreateCharge = require('../components/CreateCharge').getComponent
   newGetCharge = require('../components/GetCharge').getComponent
+  newUpdateCharge = require('../components/UpdateCharge').getComponent
+  newRefundCharge = require('../components/RefundCharge').getComponent
 
   charge = null
 
@@ -111,4 +113,104 @@ describe 'Charges', ->
 
       ins.send "foo-random-invalid-" + uuid.v4()
 
+    it 'should retrieve a charge', (done) ->
+      out.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.deep.equal charge
+        done()
 
+      ins.send charge.id
+
+  describe 'UpdateCharge component', ->
+    c = newUpdateCharge()
+    ins = noflo.internalSocket.createSocket()
+    key = noflo.internalSocket.createSocket()
+    desc = noflo.internalSocket.createSocket()
+    meta = noflo.internalSocket.createSocket()
+    out = noflo.internalSocket.createSocket()
+    err = noflo.internalSocket.createSocket()
+    c.inPorts.id.attach ins
+    c.inPorts.apikey.attach key
+    c.inPorts.description.attach desc
+    c.inPorts.metadata.attach meta
+    c.outPorts.charge.attach out
+    c.outPorts.error.attach err
+
+    it 'should fail without an API key', (done) ->
+      err.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.message).to.contain 'API key'
+        done()
+
+      ins.send "foo-123"
+
+    it 'should fail if neither description nor metadata was sent', (done) ->
+      # Set API key here as we didn't do it before
+      key.send apiKey
+
+      err.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.message).to.contain 'has to be provided'
+        done()
+
+      ins.send charge.id
+
+    it 'should update description or metadata of a charge', (done) ->
+      out.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.id).to.equal charge.id
+        chai.expect(data.description).to.equal 'A charge for a test'
+        chai.expect(data.metadata).to.deep.equal {foo: 'bar'}
+        done()
+
+      desc.send 'A charge for a test'
+      meta.send
+        foo: 'bar'
+      ins.send charge.id
+
+  describe 'RefundCharge component', ->
+    c = newRefundCharge()
+    ins = noflo.internalSocket.createSocket()
+    key = noflo.internalSocket.createSocket()
+    amount = noflo.internalSocket.createSocket()
+    wAppFee = noflo.internalSocket.createSocket()
+    out = noflo.internalSocket.createSocket()
+    err = noflo.internalSocket.createSocket()
+    c.inPorts.id.attach ins
+    c.inPorts.apikey.attach key
+    c.inPorts.amount.attach amount
+    c.inPorts.withAppFee.attach wAppFee
+    c.outPorts.charge.attach out
+    c.outPorts.error.attach err
+
+    it 'should fail without an API key', (done) ->
+      err.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.message).to.contain 'API key'
+        done()
+
+      ins.send "foo-123"
+
+    it 'should refund a part of the charge if amount is provided', (done) ->
+      # Set API key here as we didn't do it before
+      key.send apiKey
+
+      out.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.id).to.equal charge.id
+        chai.expect(data.refunds).to.have.length 1
+        chai.expect(data.refunds[0].amount).to.equal 20
+        done()
+
+      amount.send 20 # refund 20c
+      ins.send charge.id
+
+    it 'should refund entire sum left by default', (done) ->
+      out.once 'data', (data) ->
+        chai.expect(data).to.be.an 'object'
+        chai.expect(data.id).to.equal charge.id
+        chai.expect(data.refunds).to.have.length 2
+        chai.expect(data.refunds[1].amount).to.equal 30
+        done()
+
+      ins.send charge.id
