@@ -1,43 +1,66 @@
+# RefundCharge sends a request to refund a charge in part or in full.
+#
+# Input/output: https://stripe.com/docs/api/node#refund_charge
+# Errors:
+#  - https://stripe.com/docs/api/node#errors
+#  - `internal_error / missing_stripe_key`
+
 noflo = require 'noflo'
 stripe = require 'stripe'
+CustomError = require '../lib/CustomError'
+CheckApiKey = require '../lib/CheckApiKey'
 
-class RefundCharge extends noflo.AsyncComponent
-  constructor: ->
-    @client = null
-    @amount = null
-    @withAppFee = null
+exports.getComponent = ->
+  component = new noflo.Component
 
-    @inPorts =
-      id: new noflo.Port 'string'
-      apikey: new noflo.Port 'string'
-      amount: new noflo.Port 'int'
-      withAppFee: new noflo.Port 'boolean'
-    @outPorts =
-      charge: new noflo.Port 'object'
-      error: new noflo.Port 'object'
+  component.inPorts.add 'id',
+    datatype: 'string'
+    required: true
+    desciption: 'Charge ID'
+  component.inPorts.add 'amount',
+    datatype: 'int'
+    required: false
+    desciption: 'Amount in the smallest currency units,
+      default is entire charge'
+  , (event, payload) ->
+    component.amount = payload if event is 'data'
+  component.inPorts.add 'withAppFee',
+    datatype: 'boolean'
+    required: false
+    desciption: 'Attempt to refund application fee'
+  , (event, payload) ->
+    component.withAppFee = payload if event is 'data'
+  component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
+    component.client = stripe payload if event is 'data'
+  component.outPorts.add 'charge',
+    datatype: 'object'
+    desciption: 'Updated charge object'
+  component.outPorts.add 'error', datatype: 'object'
 
-    @inPorts.apikey.on 'data', (data) =>
-      @client = stripe data
-    @inPorts.amount.on 'data', (@amount) =>
-    @inPorts.withAppFee.on 'data', (@withAppFee) =>
+  component.client = null
+  component.withAppFee = null
 
-    super 'id', 'charge'
+  noflo.helpers.MultiError component, 'stripe/RefundCharge'
 
-  doAsync: (id, callback) ->
-    unless @client
-      return callback new Error 'Missing or invalid Stripe API key'
+  noflo.helpers.WirePattern component,
+    in: 'id'
+    out: 'charge'
+    async: true
+    forwardGroups: true
+  , (id, groups, out, callback) ->
+    unless CheckApiKey component, callback
+      return
 
     data = {}
-    data.amount = @amount if @amount > 0
-    data.refund_application_fee = true if @withAppFee
+    data.amount = component.amount if component.amount > 0
+    data.refund_application_fee = true if component.withAppFee
 
-    @client.charges.refund id, data, (err, charge) =>
+    component.client.charges.refund id, data, (err, charge) ->
       return callback err if err
 
-      @amount = null
-      @withAppFee = false
-      @outPorts.charge.send charge
-      @outPorts.charge.disconnect()
+      component.amount = null
+      component.withAppFee = false
+      out.send charge
       callback()
 
-exports.getComponent = -> new RefundCharge
+  return component

@@ -1,93 +1,108 @@
+# ListCharges component runs a custom query and retrieves a list of charges.
+#
+# Input/output: https://stripe.com/docs/api/node#list_charges
+# Errors:
+#  - https://stripe.com/docs/api/node#errors
+#  - `internal_error / missing_stripe_key`
+
 noflo = require 'noflo'
 stripe = require 'stripe'
+CustomError = require '../lib/CustomError'
+CheckApiKey = require '../lib/CheckApiKey'
 
-class ListCharges extends noflo.AsyncComponent
-  constructor: ->
-    @inPorts = new noflo.InPorts
-      exec:
-        datatype: 'bang'
-        required: true
-        description: 'Runs the query passed to other ports'
-      apikey:
-        datatype: 'string'
-        required: true
-        description: 'Stripe API key'
-      customer:
-        datatype: 'string'
-        required: false
-        description: 'Customer ID'
-      created:
-        datatype: 'object'
-        required: false
-        description: 'Date filter, see stripe.com/docs/api/node#list_charges'
-      endingBefore:
-        datatype: 'string'
-        required: false
-        description: 'Pagination cursor, last object ID'
-      limit:
-        datatype: 'int'
-        required: false
-        description: 'Pagination limit, defaults to 10'
-      startingAfter:
-        datatype: 'string'
-        required: false
+exports.getComponent = ->
+  component = new noflo.Component
 
-    @outPorts = new noflo.OutPorts
-      charges:
-        datatype: 'array'
-        required: true
-        description: 'List of charges'
-      hasMore:
-        datatype: 'boolean'
-        required: false
-        description: 'Whether there are more results, optional'
-      error:
-        datatype: 'object'
+  component.inPorts.add 'exec',
+    datatype: 'bang'
+    required: true
+    description: 'Runs the query passed to other ports'
+  component.inPorts.add 'apikey',
+    datatype: 'string'
+    required: true
+    description: 'Stripe API key'
+  , (event, data) ->
+    component.client = stripe data if event is 'data'
+  component.inPorts.add 'customer',
+    datatype: 'string'
+    required: false
+    description: 'Customer ID'
+  , (event, data) ->
+    component.customer = data if event is 'data'
+  component.inPorts.add 'created',
+    datatype: 'object'
+    required: false
+    description: 'Date filter, see stripe.com/docs/api/node#list_charges'
+  , (event, data) ->
+    component.created = data if event is 'data'
+  component.inPorts.add 'endingBefore',
+    datatype: 'string'
+    required: false
+    description: 'Pagination cursor, last object ID'
+  , (event, data) ->
+    component.endingBefore = data if event is 'data'
+  component.inPorts.add 'limit',
+    datatype: 'int'
+    required: false
+    description: 'Pagination limit, defaults to 10'
+  , (event, data) ->
+    component.limit = data if event is 'data'
+  component.inPorts.add 'startingAfter',
+    datatype: 'string'
+    required: false
+  , (event, data) ->
+    component.startingAfter = data if event is 'data'
 
-    @client = null
-    @customer = null
-    @created = null
-    @endingBefore = null
-    @limit = null
-    @startingAfter = null
+  component.outPorts.add 'charges',
+    datatype: 'array'
+    required: true
+    description: 'List of charges'
+  component.outPorts.add 'hasMore',
+    datatype: 'boolean'
+    required: false
+    description: 'Whether there are more results, optional'
+  component.outPorts.add 'error',
+    datatype: 'object'
 
-    @inPorts.apikey.on 'data', (data) =>
-      @client = stripe data
-    @inPorts.customer.on 'data', (@customer) =>
-    @inPorts.created.on 'data', (@created) =>
-    @inPorts.endingBefore.on 'data', (@endingBefore) =>
-    @inPorts.limit.on 'data', (@limit) =>
-    @inPorts.startingAfter.on 'data', (@startingAfter) =>
+  component.client = null
+  component.customer = null
+  component.created = null
+  component.endingBefore = null
+  component.limit = null
+  component.startingAfter = null
 
-    super 'exec', 'charges'
+  noflo.helpers.MultiError component, 'stripe/ListCharges'
 
-  doAsync: (options, callback) ->
-    unless @client
-      return callback new Error 'Missing or invalid Stripe API key'
+  noflo.helpers.WirePattern component,
+    in: 'exec'
+    out: ['charges', 'hasMore']
+    async: true
+    forwardGroups: true
+  , (options, groups, outs, callback) ->
+    unless CheckApiKey component, callback
+      return
 
     # Compile the query
     query = {}
-    query.customer = @customer if @customer
-    query.created = @created if @created
-    query.endingBefore = @endingBefore if @endingBefore
-    query.limit = @limit if @limit
-    query.startingAfter = @startingAfter if @startingAfter
+    query.customer = component.customer if component.customer
+    query.created = component.created if component.created
+    query.endingBefore = component.endingBefore if component.endingBefore
+    query.limit = component.limit if component.limit
+    query.startingAfter = component.startingAfter if component.startingAfter
 
-    @client.charges.list query, (err, charges) =>
+    component.client.charges.list query, (err, charges) ->
       return callback err if err
 
       # Reset state to avoid side effects
-      @customer = null
-      @created = null
-      @endingBefore = null
-      @limit = null
-      @startingAfter = null
+      component.customer = null
+      component.created = null
+      component.endingBefore = null
+      component.limit = null
+      component.startingAfter = null
 
-      @outPorts.charges.send charges.data
-      @outPorts.charges.disconnect()
-      if @outPorts.hasMore.isAttached()
-        @outPorts.hasMore.send charges.has_more
-        @outPorts.hasMore.disconnect()
+      outs.charges.send charges.data
+      if component.outPorts.hasMore.isAttached()
+        outs.hasMore charges.has_more
       callback()
 
-exports.getComponent = -> new ListCharges
+  return component

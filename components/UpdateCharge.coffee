@@ -1,46 +1,74 @@
+# UpdateCharge component updates a description or metadata
+# for an existing charge.
+#
+# Input/output: https://stripe.com/docs/api/node#update_charge
+# Errors:
+#  - https://stripe.com/docs/api/node#errors
+#  - `internal_error / missing_stripe_key`
+
 noflo = require 'noflo'
 stripe = require 'stripe'
+CustomError = require '../lib/CustomError'
+CheckApiKey = require '../lib/CheckApiKey'
 
-class UpdateCharge extends noflo.AsyncComponent
-  constructor: ->
-    @client = null
-    @description = null
-    @metadata = null
+exports.getComponent = ->
+  component = new noflo.Component
 
-    @inPorts =
-      id: new noflo.Port 'string'
-      apikey: new noflo.Port 'string'
-      description: new noflo.Port 'string'
-      metadata: new noflo.Port 'object'
-    @outPorts =
-      charge: new noflo.Port 'object'
-      error: new noflo.Port 'object'
+  component.inPorts.add 'id',
+    datatype: 'string'
+    required: true
+    description: 'Charge ID'
+  component.inPorts.add 'apikey',
+    datatype: 'string'
+    required: true
+  , (event, payload) ->
+    component.client = stripe payload if event is 'data'
+  component.inPorts.add 'description',
+    datatype: 'string'
+    required: false
+    description: 'Charge description (optional if metadata is provided)'
+  , (event, payload) ->
+    component.description = payload if event is 'data'
+  component.inPorts.add 'metadata',
+    datatype: 'object'
+    required: false
+    description: 'Charge metadata (optional if description is provided)'
+  , (event, payload) ->
+    component.metadata = payload if event is 'data'
+  component.outPorts.add 'charge', datatype: 'object'
+  component.outPorts.add 'error', datatype: 'object'
 
-    @inPorts.apikey.on 'data', (data) =>
-      @client = stripe data
-    @inPorts.description.on 'data', (@description) =>
-    @inPorts.metadata.on 'data', (@metadata) =>
+  component.client = null
+  component.description = null
+  component.metadata = null
 
-    super 'id', 'charge'
+  noflo.helpers.MultiError component, 'stripe/UpdateCharge'
 
-  doAsync: (id, callback) ->
-    unless @client
-      return callback new Error 'Missing or invalid Stripe API key'
+  noflo.helpers.WirePattern component,
+    in: 'id'
+    out: 'charge'
+    async: true
+    forwardGroups: true
+  , (id, groups, out, callback) ->
+    unless CheckApiKey component, callback
+      return
 
-    unless @description or @metadata
-      return callback new Error 'Description or metadata has to be provided'
+    unless component.description or component.metadata
+      return callback CustomError 'Description or metadata has to be provided',
+        kind: 'internal_error'
+        code: 'missing_charge_update_data'
+        param: if component.description then 'metadata' else 'description'
 
     data = {}
-    data.description = @description if @description
-    data.metadata = @metadata if @metadata
+    data.description = component.description if component.description
+    data.metadata = component.metadata if component.metadata
 
-    @client.charges.update id, data, (err, charge) =>
+    component.client.charges.update id, data, (err, charge) ->
       return callback err if err
 
-      @description = null
-      @metadata = null
-      @outPorts.charge.send charge
-      @outPorts.charge.disconnect()
+      component.description = null
+      component.metadata = null
+      out.send charge
       callback()
 
-exports.getComponent = -> new UpdateCharge
+  return component
