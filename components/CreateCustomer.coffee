@@ -1,40 +1,53 @@
+# CreateCardToken component creates a new credit card token.
+#
+# Input/output: https://stripe.com/docs/api/node#create_customer
+# Errors:
+#  - https://stripe.com/docs/api/node#errors
+#  - `internal_error / missing_stripe_key`
+#  - `customer_error / missing_customer_email`
+
 noflo = require 'noflo'
 stripe = require 'stripe'
+CustomError = require '../lib/CustomError'
+CheckApiKey = require '../lib/CheckApiKey'
 
-class CreateCustomer extends noflo.AsyncComponent
-  constructor: ->
-    @client = null
+exports.getComponent = ->
+  component = new noflo.Component
 
-    @inPorts =
-      data: new noflo.Port 'object'
-      apikey: new noflo.Port 'string'
-    @outPorts =
-      customer: new noflo.Port 'object'
-      error: new noflo.Port 'object'
+  component.inPorts.add 'data', datatype: 'object'
+  component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
+    component.client = stripe payload if event is 'data'
+  component.outPorts.add 'customer', datatype: 'object'
+  component.outPorts.add 'error', datatype: 'object'
+  component.client = null
 
-    @inPorts.apikey.on 'data', (data) =>
-      @client = stripe data
+  noflo.helpers.MultiError component, 'stripe/CreateCustomer'
 
-    super 'data', 'customer'
-
-  checkRequired: (customerData, callback) ->
+  component.checkRequired = (customerData, callback) ->
     unless customerData.email
-      return callback new Error "Missing email"
-    callback()
+      component.error CustomError "Missing email",
+        kind: 'customer_error'
+        code: 'missing_customer_email'
+        param: 'email'
+    return not component.hasErrors
 
-  doAsync: (customerData, callback) ->
-    unless @client
-      return callback new Error "Missing or invalid Stripe API key"
+  noflo.helpers.WirePattern component,
+    in: 'data'
+    out: 'customer'
+    async: true
+    forwardGroups: true
+  , (customerData, groups, out, callback) ->
+    unless CheckApiKey component, callback
+      return
 
     # Validate inputs
-    @checkRequired customerData, (err) =>
+    unless component.checkRequired customerData
+      return callback no
+
+    # Create Stripe customer
+    component.client.customers.create customerData, (err, customer) ->
       return callback err if err
+      out.send customer
+      callback()
 
-      # Create Stripe customer
-      @client.customers.create customerData, (err, customer) =>
-        return callback err if err
-        @outPorts.customer.send customer
-        @outPorts.customer.disconnect()
-        callback()
-
-exports.getComponent = -> new CreateCustomer
+  return component

@@ -1,42 +1,58 @@
+# CreateCharge component creates a new charge.
+#
+# Input/output: https://stripe.com/docs/api/node#create_charge
+# Errors:
+#  - https://stripe.com/docs/api/node#errors
+#  - `internal_error / missing_stripe_key`
+#  - `internal_error / missing_charge_amount`
+#  - `internal_error / missing_charge_currency`
+
 noflo = require 'noflo'
 stripe = require 'stripe'
+CustomError = require '../lib/CustomError'
+CheckApiKey = require '../lib/CheckApiKey'
 
-class CreateCharge extends noflo.AsyncComponent
-  constructor: ->
-    @client = null
+exports.getComponent = ->
+  component = new noflo.Component
 
-    @inPorts =
-      data: new noflo.Port 'object'
-      apikey: new noflo.Port 'string'
-    @outPorts =
-      charge: new noflo.Port 'object'
-      error: new noflo.Port 'object'
+  component.inPorts.add 'data', datatype: 'object'
+  component.inPorts.add 'apikey', datatype: 'string', (event, data) ->
+    component.client = stripe data if event is 'data'
+  component.outPorts.add 'charge', datatype: 'object'
+  component.outPorts.add 'error', datatype: 'object'
+  component.client = null
 
-    @inPorts.apikey.on 'data', (data) =>
-      @client = stripe data
+  noflo.helpers.MultiError component, 'stripe/CreateCharge'
 
-    super 'data', 'charge'
-
-  checkRequired: (chargeData, callback) ->
+  component.checkRequired = (chargeData, callback) ->
     unless chargeData.amount
-      return callback new Error "Missing amount"
+      component.error CustomError "Missing amount",
+        kind: 'internal_error'
+        code: 'missing_charge_amount'
+        param: 'amount'
     unless chargeData.currency
-      return callback new Error "Missing currency"
-    callback()
+      component.error CustomError "Missing currency",
+        kind: 'internal_error'
+        code: 'missing_charge_currency'
+        param: 'currency'
+    return not component.hasErrors
 
-  doAsync: (chargeData, callback) ->
-    unless @client
-      return callback new Error "Missing Stripe API key"
+  noflo.helpers.WirePattern component,
+    in: 'data'
+    out: 'charge'
+    async: true
+  , (chargeData, groups, out, callback) ->
+    unless CheckApiKey component, callback
+      return
 
     # Validate inputs
-    @checkRequired chargeData, (err) =>
+    unless component.checkRequired chargeData
+      return callback no
+
+    # Create Stripe charge
+    component.client.charges.create chargeData, (err, charge) ->
       return callback err if err
+      out.send charge
+      callback()
 
-      # Create Stripe charge
-      @client.charges.create chargeData, (err, charge) =>
-        return callback err if err
-        @outPorts.charge.send charge
-        @outPorts.charge.disconnect()
-        callback()
-
-exports.getComponent = -> new CreateCharge
+  return component
