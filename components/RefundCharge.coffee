@@ -16,25 +16,25 @@ exports.getComponent = ->
   component.inPorts.add 'id',
     datatype: 'string'
     required: true
-    desciption: 'Charge ID'
+    description: 'Charge ID'
   component.inPorts.add 'amount',
     datatype: 'int'
     required: false
-    desciption: 'Amount in the smallest currency units,
+    description: 'Amount in the smallest currency units,
       default is entire charge'
   , (event, payload) ->
     component.amount = payload if event is 'data'
   component.inPorts.add 'withAppFee',
     datatype: 'boolean'
     required: false
-    desciption: 'Attempt to refund application fee'
+    description: 'Attempt to refund application fee'
   , (event, payload) ->
     component.withAppFee = payload if event is 'data'
   component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
     component.client = stripe payload if event is 'data'
   component.outPorts.add 'charge',
     datatype: 'object'
-    desciption: 'Updated charge object'
+    description: 'Updated charge object'
   component.outPorts.add 'error', datatype: 'object'
 
   component.client = null
