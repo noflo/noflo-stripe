@@ -181,7 +181,7 @@ describe 'Charges', ->
     c.inPorts.apikey.attach key
     c.inPorts.amount.attach amount
     c.inPorts.withAppFee.attach wAppFee
-    c.outPorts.charge.attach out
+    c.outPorts.refund.attach out
     c.outPorts.error.attach err
 
     it 'should fail without an API key', (done) ->
@@ -198,9 +198,8 @@ describe 'Charges', ->
 
       out.once 'data', (data) ->
         chai.expect(data).to.be.an 'object'
-        chai.expect(data.id).to.equal charge.id
-        chai.expect(data.refunds).to.have.length 1
-        chai.expect(data.refunds[0].amount).to.equal 20
+        chai.expect(data.charge).to.equal charge.id
+        chai.expect(data.amount).to.equal 20
         done()
 
       amount.send 20 # refund 20c
@@ -209,10 +208,9 @@ describe 'Charges', ->
     it 'should refund entire sum left by default', (done) ->
       out.once 'data', (data) ->
         chai.expect(data).to.be.an 'object'
-        chai.expect(data.id).to.equal charge.id
-        chai.expect(data.refunds).to.have.length 2
+        chai.expect(data.charge).to.equal charge.id
         # App fee is not refunded by default
-        chai.expect(data.refunds[1].amount).to.be.at.least 20
+        chai.expect(data.amount).to.be.at.least 20
         done()
 
       ins.send charge.id

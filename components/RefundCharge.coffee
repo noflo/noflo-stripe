@@ -32,9 +32,9 @@ exports.getComponent = ->
     component.withAppFee = payload if event is 'data'
   component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
     component.client = stripe payload if event is 'data'
-  component.outPorts.add 'charge',
+  component.outPorts.add 'refund',
     datatype: 'object'
-    description: 'Updated charge object'
+    description: 'Created refund object'
   component.outPorts.add 'error', datatype: 'object'
 
   component.client = null
@@ -44,7 +44,7 @@ exports.getComponent = ->
 
   noflo.helpers.WirePattern component,
     in: 'id'
-    out: 'charge'
+    out: 'refund'
     async: true
     forwardGroups: true
   , (id, groups, out, callback) ->
@@ -55,12 +55,12 @@ exports.getComponent = ->
     data.amount = component.amount if component.amount > 0
     data.refund_application_fee = true if component.withAppFee
 
-    component.client.charges.refund id, data, (err, charge) ->
+    component.client.charges.createRefund id, data, (err, refund) ->
       return callback err if err
 
       component.amount = null
       component.withAppFee = false
-      out.send charge
+      out.send refund
       callback()
 
   return component
