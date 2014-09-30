@@ -2,7 +2,7 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "licenses": [
     {
       "type": "MIT",
@@ -18,12 +18,12 @@
   },
   "dependencies": {
     "noflo": ">=0.5.4",
-    "stripe": "2.5.x",
+    "stripe": "2.8.x",
     "uuid": "1.4.x"
   },
   "devDependencies": {
     "coffeelint": "*",
-    "coffee-script": "1.7.x",
+    "coffee-script": "1.8.x",
     "mocha": "1.x",
     "chai": "1.x"
   },
