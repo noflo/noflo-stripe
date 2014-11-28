@@ -1,64 +1,53 @@
 noflo = require 'noflo'
 chai = require 'chai'
 uuid = require 'uuid'
+Tester = require 'noflo-tester'
 
 describe 'Charges', ->
-
   apiKey = process.env.STRIPE_TOKEN or 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'
-  newCreateCharge = require('../components/CreateCharge').getComponent
-  newGetCharge = require('../components/GetCharge').getComponent
-  newUpdateCharge = require('../components/UpdateCharge').getComponent
-  newRefundCharge = require('../components/RefundCharge').getComponent
-  newListCharges = require('../components/ListCharges').getComponent
-
   charge = null
 
   chai.expect(apiKey).not.to.be.empty
 
   describe 'CreateCharge component', ->
-    c = newCreateCharge()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.data.attach ins
-    c.inPorts.apikey.attach key
-    c.outPorts.charge.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/CreateCharge'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send
+      t.send 'data',
         currency: 'usd'
         amount: 10000
 
     it 'should fail if currency is missing', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.equal 'Missing currency'
         done()
 
-      ins.send
+      t.send 'data',
         amount: 1000000
 
     it 'should fail if amount is missing', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.equal 'Missing amount'
         done()
 
-      ins.send
+      t.send 'data',
         currency: 'EUR'
 
     it 'should create a new charge', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'charge', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.id).not.to.be.empty
         chai.expect(data.object).to.equal 'charge'
@@ -69,12 +58,12 @@ describe 'Charges', ->
         charge = data
         done()
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         assert.fail data, null
         done data
 
       # Charge 50c
-      ins.send
+      t.send 'data',
         currency: "usd"
         amount: 50
         card:
@@ -84,167 +73,139 @@ describe 'Charges', ->
           name: "T. Ester"
 
   describe 'GetCharge component', ->
-    c = newGetCharge()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.id.attach ins
-    c.inPorts.apikey.attach key
-    c.outPorts.charge.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/GetCharge'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send "foo-123"
+      t.send 'id', "foo-123"
 
     it 'should fail if non-existend ID is provided', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.type).to.equal 'StripeInvalidRequest'
         chai.expect(data.param).to.equal 'id'
         done()
 
-      ins.send "foo-random-invalid-" + uuid.v4()
+      t.send 'id', "foo-random-invalid-" + uuid.v4()
 
     it 'should retrieve a charge', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'charge', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data).to.deep.equal charge
         done()
 
-      ins.send charge.id
+      t.send 'id', charge.id
 
   describe 'UpdateCharge component', ->
-    c = newUpdateCharge()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    desc = noflo.internalSocket.createSocket()
-    meta = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.id.attach ins
-    c.inPorts.apikey.attach key
-    c.inPorts.description.attach desc
-    c.inPorts.metadata.attach meta
-    c.outPorts.charge.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/UpdateCharge'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send "foo-123"
+      t.send 'id', "foo-123"
 
     it 'should fail if neither description nor metadata was sent', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'has to be provided'
         done()
 
-      ins.send charge.id
+      t.send 'id', charge.id
 
     it 'should update description or metadata of a charge', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'charge', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.id).to.equal charge.id
         chai.expect(data.description).to.equal 'A charge for a test'
         chai.expect(data.metadata).to.deep.equal {foo: 'bar'}
         done()
 
-      desc.send 'A charge for a test'
-      meta.send
-        foo: 'bar'
-      ins.send charge.id
+      t.send
+        description: 'A charge for a test'
+        metadata:
+          foo: 'bar'
+        id: charge.id
 
   describe 'RefundCharge component', ->
-    c = newRefundCharge()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    amount = noflo.internalSocket.createSocket()
-    wAppFee = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.id.attach ins
-    c.inPorts.apikey.attach key
-    c.inPorts.amount.attach amount
-    c.inPorts.withAppFee.attach wAppFee
-    c.outPorts.refund.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/RefundCharge'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send "foo-123"
+      t.send 'id', "foo-123"
 
     it 'should refund a part of the charge if amount is provided', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      out.once 'data', (data) ->
+      t.receive 'refund', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.charge).to.equal charge.id
         chai.expect(data.amount).to.equal 20
         done()
 
-      amount.send 20 # refund 20c
-      ins.send charge.id
+      t.send
+        amount: 20 # refund 20c
+        id: charge.id
 
     it 'should refund entire sum left by default', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'refund', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.charge).to.equal charge.id
         # App fee is not refunded by default
         chai.expect(data.amount).to.be.at.least 20
         done()
 
-      ins.send charge.id
+      t.send 'id', charge.id
 
   describe 'ListCharges component', ->
-    c = newListCharges()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    created = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.exec.attach ins
-    c.inPorts.apikey.attach key
-    c.inPorts.created.attach created
-    c.outPorts.charges.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/ListCharges'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send true
+      t.send 'exec', true
 
     it 'should output an array of all charges', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      out.once 'data', (data) ->
+      t.receive 'charges', (data) ->
         chai.expect(data).to.be.an 'array'
         chai.expect(data).to.have.length.above 0
         done()
 
-      ins.send true
+      t.send 'exec', true
 
     # TODO test other ListCharges parameters

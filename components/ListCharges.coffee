@@ -35,29 +35,29 @@ exports.getComponent = ->
     description: 'Date filter, see stripe.com/docs/api/node#list_charges'
   , (event, data) ->
     component.created = data if event is 'data'
-  component.inPorts.add 'endingBefore',
+  component.inPorts.add 'endingbefore',
     datatype: 'string'
     required: false
     description: 'Pagination cursor, last object ID'
   , (event, data) ->
-    component.endingBefore = data if event is 'data'
+    component.endingbefore = data if event is 'data'
   component.inPorts.add 'limit',
     datatype: 'int'
     required: false
     description: 'Pagination limit, defaults to 10'
   , (event, data) ->
     component.limit = data if event is 'data'
-  component.inPorts.add 'startingAfter',
+  component.inPorts.add 'startingafter',
     datatype: 'string'
     required: false
   , (event, data) ->
-    component.startingAfter = data if event is 'data'
+    component.startingafter = data if event is 'data'
 
   component.outPorts.add 'charges',
     datatype: 'array'
     required: true
     description: 'List of charges'
-  component.outPorts.add 'hasMore',
+  component.outPorts.add 'hasmore',
     datatype: 'boolean'
     required: false
     description: 'Whether there are more results, optional'
@@ -67,15 +67,15 @@ exports.getComponent = ->
   component.client = null
   component.customer = null
   component.created = null
-  component.endingBefore = null
+  component.endingbefore = null
   component.limit = null
-  component.startingAfter = null
+  component.startingafter = null
 
   noflo.helpers.MultiError component, 'stripe/ListCharges'
 
   noflo.helpers.WirePattern component,
     in: 'exec'
-    out: ['charges', 'hasMore']
+    out: ['charges', 'hasmore']
     async: true
     forwardGroups: true
   , (options, groups, outs, callback) ->
@@ -86,9 +86,9 @@ exports.getComponent = ->
     query = {}
     query.customer = component.customer if component.customer
     query.created = component.created if component.created
-    query.endingBefore = component.endingBefore if component.endingBefore
+    query.endingbefore = component.endingbefore if component.endingbefore
     query.limit = component.limit if component.limit
-    query.startingAfter = component.startingAfter if component.startingAfter
+    query.startingafter = component.startingafter if component.startingafter
 
     component.client.charges.list query, (err, charges) ->
       return callback err if err
@@ -96,13 +96,13 @@ exports.getComponent = ->
       # Reset state to avoid side effects
       component.customer = null
       component.created = null
-      component.endingBefore = null
+      component.endingbefore = null
       component.limit = null
-      component.startingAfter = null
+      component.startingafter = null
 
       outs.charges.send charges.data
-      if component.outPorts.hasMore.isAttached()
-        outs.hasMore charges.has_more
+      if component.outPorts.hasmore.isAttached()
+        outs.hasmore.send charges.has_more
       callback()
 
   return component

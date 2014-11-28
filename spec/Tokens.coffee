@@ -1,72 +1,51 @@
 noflo = require 'noflo'
 chai = require 'chai'
 uuid = require 'uuid'
+Tester = require 'noflo-tester'
 
 describe 'Tokens', ->
 
   apiKey = process.env.STRIPE_TOKEN or 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'
-  newCreateCardToken = require('../components/CreateCardToken').getComponent
-  newRetrieveToken = require('../components/RetrieveToken').getComponent
-
   token = null
 
   chai.expect(apiKey).not.to.be.empty
 
   describe 'CreateCardToken component', ->
-    c = newCreateCardToken()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.card.attach ins
-    c.inPorts.apikey.attach key
-    c.outPorts.token.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/CreateCardToken'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send
+      t.send 'card',
         number: "4242"
 
-    it 'should fail if card number is missing', (done) ->
+    it 'should fail if card number or expiry data is missing', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      err.once 'data', (data) ->
-        chai.expect(data).to.be.an 'object'
-        chai.expect(data.message).to.equal 'Missing card number'
+      t.receive 'error', (data) ->
+        chai.expect(data).to.be.an 'array'
+        chai.expect(data).to.have.lengthOf 3
+        messages = [
+          'Missing card number'
+          'Missing or invalid expiration month'
+          'Missing or invalid expiration year'
+        ]
+        for msg in data
+          chai.expect(messages).to.include msg.message
         done()
 
-      ins.send
+      t.send 'card',
         name: 'T. Ester'
 
-    it 'should fail if expiry month is missing', (done) ->
-      err.once 'data', (data) ->
-        chai.expect(data).to.be.an 'object'
-        chai.expect(data.message).to.contain 'month'
-        done()
-
-      ins.send
-        number: "4242424242424242"
-        name: "T. Ester"
-
-    it 'should fail if expiry year is missing', (done) ->
-      err.once 'data', (data) ->
-        chai.expect(data).to.be.an 'object'
-        chai.expect(data.message).to.contain 'year'
-        done()
-
-      ins.send
-        number: "4242424242424242"
-        name: "T. Ester"
-        exp_month: 12
-
     it 'should create a new token', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'token', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.id).not.to.be.empty
         chai.expect(data.object).to.equal 'token'
@@ -77,51 +56,46 @@ describe 'Tokens', ->
         token = data
         done()
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         assert.fail data, null
         done data
 
-      ins.send
+      t.send 'card',
         number: "4242424242424242"
         exp_month: 12
         exp_year:  2020
         name: "T. Ester"
 
   describe 'RetrieveToken component', ->
-    c = newRetrieveToken()
-    ins = noflo.internalSocket.createSocket()
-    key = noflo.internalSocket.createSocket()
-    out = noflo.internalSocket.createSocket()
-    err = noflo.internalSocket.createSocket()
-    c.inPorts.id.attach ins
-    c.inPorts.apikey.attach key
-    c.outPorts.token.attach out
-    c.outPorts.error.attach err
+    t = new Tester 'stripe/RetrieveToken'
+    before (done) ->
+      t.start ->
+        done()
 
     it 'should fail without an API key', (done) ->
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.message).to.contain 'API key'
         done()
 
-      ins.send "foo-123"
+      t.send 'id', "foo-123"
 
     it 'should fail if non-existend ID is provided', (done) ->
       # Set API key here as we didn't do it before
-      key.send apiKey
+      t.send 'apikey', apiKey
 
-      err.once 'data', (data) ->
+      t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data.type).to.equal 'StripeInvalidRequest'
         chai.expect(data.param).to.equal 'token'
         done()
 
-      ins.send "foo-random-invalid-" + uuid.v4()
+      t.send 'id', "foo-random-invalid-" + uuid.v4()
 
     it 'should retrieve a token', (done) ->
-      out.once 'data', (data) ->
+      t.receive 'token', (data) ->
         chai.expect(data).to.be.an 'object'
         chai.expect(data).to.deep.equal token
         done()
 
-      ins.send token.id
+      t.send 'id', token.id

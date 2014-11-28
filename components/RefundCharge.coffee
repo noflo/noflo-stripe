@@ -24,12 +24,12 @@ exports.getComponent = ->
       default is entire charge'
   , (event, payload) ->
     component.amount = payload if event is 'data'
-  component.inPorts.add 'withAppFee',
+  component.inPorts.add 'withappfee',
     datatype: 'boolean'
     required: false
     description: 'Attempt to refund application fee'
   , (event, payload) ->
-    component.withAppFee = payload if event is 'data'
+    component.withappfee = payload if event is 'data'
   component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
     component.client = stripe payload if event is 'data'
   component.outPorts.add 'refund',
@@ -38,7 +38,7 @@ exports.getComponent = ->
   component.outPorts.add 'error', datatype: 'object'
 
   component.client = null
-  component.withAppFee = null
+  component.withappfee = null
 
   noflo.helpers.MultiError component, 'stripe/RefundCharge'
 
@@ -53,13 +53,13 @@ exports.getComponent = ->
 
     data = {}
     data.amount = component.amount if component.amount > 0
-    data.refund_application_fee = true if component.withAppFee
+    data.refund_application_fee = true if component.withappfee
 
     component.client.charges.createRefund id, data, (err, refund) ->
       return callback err if err
 
       component.amount = null
-      component.withAppFee = false
+      component.withappfee = false
       out.send refund
       callback()
 
