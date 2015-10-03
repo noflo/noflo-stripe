@@ -17,7 +17,7 @@ describe 'Charges', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -30,7 +30,7 @@ describe 'Charges', ->
       t.send 'apikey', apiKey
 
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.equal 'Missing currency'
         done()
 
@@ -39,7 +39,7 @@ describe 'Charges', ->
 
     it 'should fail if amount is missing', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.equal 'Missing amount'
         done()
 
@@ -80,7 +80,7 @@ describe 'Charges', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -92,7 +92,7 @@ describe 'Charges', ->
 
       t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
-        chai.expect(data.type).to.equal 'StripeInvalidRequest'
+        chai.expect(data.type).to.equal 'StripeInvalidRequestError'
         chai.expect(data.param).to.equal 'id'
         done()
 
@@ -114,7 +114,7 @@ describe 'Charges', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -125,7 +125,7 @@ describe 'Charges', ->
       t.send 'apikey', apiKey
 
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'has to be provided'
         done()
 
@@ -153,7 +153,7 @@ describe 'Charges', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -191,7 +191,7 @@ describe 'Charges', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 

@@ -18,7 +18,7 @@ describe 'Tokens', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -74,7 +74,7 @@ describe 'Tokens', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -86,7 +86,7 @@ describe 'Tokens', ->
 
       t.receive 'error', (data) ->
         chai.expect(data).to.be.an 'object'
-        chai.expect(data.type).to.equal 'StripeInvalidRequest'
+        chai.expect(data.type).to.equal 'StripeInvalidRequestError'
         chai.expect(data.param).to.equal 'token'
         done()
 

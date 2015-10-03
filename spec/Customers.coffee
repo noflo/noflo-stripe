@@ -18,7 +18,7 @@ describe 'Customers', ->
 
     it 'should fail without an API key', (done) ->
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.contain 'API key'
         done()
 
@@ -30,7 +30,7 @@ describe 'Customers', ->
       t.send 'apikey', apiKey
 
       t.receive 'error', (data) ->
-        chai.expect(data).to.be.an 'object'
+        chai.expect(data).to.be.an 'error'
         chai.expect(data.message).to.equal 'Missing email'
         done()
 
@@ -42,13 +42,12 @@ describe 'Customers', ->
         chai.expect(data.id).not.to.be.empty
         chai.expect(data.object).to.equal 'customer'
         chai.expect(data.email).to.equal 'customer@noflo-stripe.org'
-        chai.expect(data.cards.total_count).to.equal 1
+        chai.expect(data.sources.total_count).to.equal 1
         # Save customer object for later reuse
         customer = data
         done()
 
       t.receive 'error', (data) ->
-        assert.fail data, null
         done data
 
       t.send 'data',
