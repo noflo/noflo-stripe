@@ -6,53 +6,50 @@
 #  - `internal_error / missing_stripe_key`
 #  - `internal_error / missing_charge_amount`
 #  - `internal_error / missing_charge_currency`
-
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      data:
+        datatype: 'object'
+      apikey:
+        datatype: 'string'
+        control: true
+    outPorts:
+      charge:
+        datatype: 'object'
+      error:
+        datatype: 'object'
 
-  component.inPorts.add 'data', datatype: 'object'
-  component.inPorts.add 'apikey', datatype: 'string', (event, data) ->
-    component.client = stripe data if event is 'data'
-  component.outPorts.add 'charge', datatype: 'object'
-  component.outPorts.add 'error', datatype: 'object'
-  component.client = null
+  c.forwardBrackets =
+    data: ['charge', 'error']
 
-  noflo.helpers.MultiError component, 'stripe/CreateCharge'
-
-  component.checkRequired = (chargeData, callback) ->
+  c.checkRequired = (chargeData, callback) ->
+    errors = []
     unless chargeData.amount
-      component.error CustomError "Missing amount",
+      errors.push noflo.helpers.CustomError "Missing amount",
         kind: 'internal_error'
         code: 'missing_charge_amount'
         param: 'amount'
     unless chargeData.currency
-      component.error CustomError "Missing currency",
+      errors.push noflo.helpers.CustomError "Missing currency",
         kind: 'internal_error'
         code: 'missing_charge_currency'
         param: 'currency'
-    return not component.hasErrors
+    return errors
 
-  noflo.helpers.WirePattern component,
-    in: 'data'
-    out: 'charge'
-    async: true
-  , (chargeData, groups, out, callback) ->
-    unless CheckApiKey component, callback
-      return
+  c.process (input, output) ->
+    return unless input.has 'data', 'apikey'
+    client = stripe input.getData('apikey')
+    chargeData = input.getData 'data'
 
-    # Validate inputs
-    unless component.checkRequired chargeData
-      return callback no
+    errors = c.checkRequired chargeData
+    if errors.length > 0
+      return output.done errors
 
     # Create Stripe charge
-    component.client.charges.create chargeData, (err, charge) ->
-      return callback err if err
-      out.send charge
-      callback()
-
-  return component
+    client.charges.create chargeData, (err, charge) ->
+      return output.done err if err
+      output.sendDone charge

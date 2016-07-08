@@ -7,70 +7,62 @@
 
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
+CustomError = noflo.helpers.CustomError
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      card:
+        datatype: 'object'
+        description: 'Credit card details'
+      apikey:
+        datatype: 'string'
+        description: 'Stripe API key'
+        control: true
+    outPorts:
+      token:
+        datatype: 'object'
+        description: 'New token'
+      error:
+        datatype: 'object'
 
-  component.client = null
+  c.forwardBrackets =
+    card: ['token', 'error']
 
-  component.inPorts.add 'card',
-    datatype: 'object'
-    required: true
-    description: 'Credit card details'
-  component.inPorts.add 'apikey',
-    datatype: 'string'
-    required: true
-    description: 'Stripe API key'
-  , (event, data) ->
-    component.client = stripe data if event is 'data'
-
-  component.outPorts.add 'token',
-    datatype: 'object'
-    description: 'New token'
-  component.outPorts.add 'error',
-    datatype: 'object'
-
-  noflo.helpers.MultiError component, 'stripe/CreateCardToken'
-
-  component.checkRequired = (card, callback) ->
+  c.checkRequired = (card) ->
+    errors = []
     unless card.number
-      component.error CustomError "Missing card number",
+      errors.push CustomError "Missing card number",
         kind: 'card_error'
         code: 'invalid_number'
         param: 'number'
     unless card.exp_month or card.exp_month < 1 or card.exp_month > 12
-      component.error CustomError "Missing or invalid expiration month",
+      errors.push CustomError "Missing or invalid expiration month",
         kind: 'card_error'
         code: 'invalid_expiry_month'
         param: 'exp_month'
     unless card.exp_year or card.exp_year < 0 or card.exp_year > 2100
-      component.error CustomError "Missing or invalid expiration year",
+      errors.push CustomError "Missing or invalid expiration year",
         kind: 'card_error'
         code: 'invalid_expiry_year'
         param: 'exp_year'
-    return not component.hasErrors
+    return errors
 
-  noflo.helpers.WirePattern component,
-    in: 'card'
-    out: 'token'
-    async: true
-    forwardGroups: true
-  , (card, groups, out, callback) ->
-    unless CheckApiKey component, callback
-      return
+  c.process (input, output) ->
+    return unless input.has 'card', 'apikey'
+
+    card = input.getData 'card'
+    client = stripe input.getData('apikey')
 
     # Validate inputs
-    unless component.checkRequired card
-      return callback no
+    errors = c.checkRequired card
+    if errors.length > 0
+      return output.done errors
 
     # Create Stripe token
     data =
       card: card
-    component.client.tokens.create data, (err, token) ->
-      return callback err if err
-      out.send token
-      callback()
 
-  return component
+    client.tokens.create data, (err, token) ->
+      return output.done err if err
+      output.sendDone token

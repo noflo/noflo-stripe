@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "coffee-script": "1.10.0",
-    "noflo": "0.5.14",
+    "noflo": "git+https://github.com/aretecode/noflo-built.git#experiment",
     "stripe": "4.0.0",
     "uuid": "2.0.1"
   },
@@ -18,7 +18,7 @@
     "chai": "3.3.0",
     "coffeelint": "1.12.1",
     "mocha": "2.3.3",
-    "noflo-tester": "0.0.2"
+    "noflo-tester": "0.0.3"
   },
   "noflo": {
     "icon": "credit-card",

@@ -7,34 +7,31 @@
 
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      id:
+        datatype: 'string'
+      apikey:
+        datatype: 'string'
+        control: true
+    outPorts:
+      token:
+        datatype: 'object'
+      error:
+        datatype: 'object'
 
-  component.inPorts.add 'id', datatype: 'string'
-  component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
-    component.client = stripe payload if event is 'data'
-  component.outPorts.add 'token', datatype: 'object'
-  component.outPorts.add 'error', datatype: 'object'
-  component.client = null
+  c.forwardBrackets =
+    id: ['token']
 
-  noflo.helpers.MultiError component, 'stripe/RetrieveToken'
+  c.process (input, output) ->
+    return unless input.has 'id', 'apikey'
 
-  noflo.helpers.WirePattern component,
-    in: 'id'
-    out: 'token'
-    async: true
-    forwardGroups: true
-  , (id, groups, out, callback) ->
-    unless CheckApiKey component, callback
-      return
+    id = input.getData 'id'
+    client = stripe input.getData('apikey')
 
     # Retrieve Stripe Token
-    component.client.tokens.retrieve id, (err, tokenData) ->
-      return callback err if err
-      out.send tokenData
-      callback()
-
-  return component
+    client.tokens.retrieve id, (err, tokenData) ->
+      return output.done err if err
+      output.sendDone tokenData

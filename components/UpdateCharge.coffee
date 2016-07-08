@@ -8,67 +8,58 @@
 
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      id:
+        datatype: 'string'
+        required: true
+        description: 'Charge ID'
+      apikey:
+        datatype: 'string'
+        required: true
+        control: true
+      description:
+        datatype: 'string'
+        required: false
+        description: 'Charge description (optional if metadata is provided)'
+        control: true
+      metadata:
+        datatype: 'object'
+        required: false
+        description: 'Charge metadata (optional if description is provided)'
+        control: true
+    outPorts:
+      charge:
+        datatype: 'object'
+      error:
+        datatype: 'object'
 
-  component.inPorts.add 'id',
-    datatype: 'string'
-    required: true
-    description: 'Charge ID'
-  component.inPorts.add 'apikey',
-    datatype: 'string'
-    required: true
-  , (event, payload) ->
-    component.client = stripe payload if event is 'data'
-  component.inPorts.add 'description',
-    datatype: 'string'
-    required: false
-    description: 'Charge description (optional if metadata is provided)'
-  , (event, payload) ->
-    component.description = payload if event is 'data'
-  component.inPorts.add 'metadata',
-    datatype: 'object'
-    required: false
-    description: 'Charge metadata (optional if description is provided)'
-  , (event, payload) ->
-    component.metadata = payload if event is 'data'
-  component.outPorts.add 'charge', datatype: 'object'
-  component.outPorts.add 'error', datatype: 'object'
+  c.forwardBrackets =
+    id: ['refund', 'error']
 
-  component.client = null
-  component.description = null
-  component.metadata = null
+  c.process (input, output) ->
+    return unless input.has 'id', (ip) -> ip.type is 'data'
+    return unless input.has 'apikey'
 
-  noflo.helpers.MultiError component, 'stripe/UpdateCharge'
+    id = input.getData 'id'
 
-  noflo.helpers.WirePattern component,
-    in: 'id'
-    out: 'charge'
-    async: true
-    forwardGroups: true
-  , (id, groups, out, callback) ->
-    unless CheckApiKey component, callback
-      return
+    metadata = input.getData 'metadata'
+    description = input.getData 'description'
+    client = stripe input.getData('apikey')
 
-    unless component.description or component.metadata
-      return callback CustomError 'Description or metadata has to be provided',
+    unless description or metadata
+      return output.done noflo.helpers.CustomError 'Description
+      or metadata has to be provided',
         kind: 'internal_error'
         code: 'missing_charge_update_data'
-        param: if component.description then 'metadata' else 'description'
+        param: if description then 'metadata' else 'description'
 
     data = {}
-    data.description = component.description if component.description
-    data.metadata = component.metadata if component.metadata
+    data.description = description if description
+    data.metadata = metadata if metadata
 
-    component.client.charges.update id, data, (err, charge) ->
-      return callback err if err
-
-      component.description = null
-      component.metadata = null
-      out.send charge
-      callback()
-
-  return component
+    client.charges.update id, data, (err, charge) ->
+      return output.done err if err
+      output.sendDone charge
