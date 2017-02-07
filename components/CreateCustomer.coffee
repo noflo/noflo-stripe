@@ -8,46 +8,48 @@
 
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      data:
+        datatype: 'object'
+      apikey:
+        datatype: 'string'
+        control: true
+    outPorts:
+      customer:
+        datatype: 'object'
+      error:
+        datatype: 'object'
 
-  component.inPorts.add 'data', datatype: 'object'
-  component.inPorts.add 'apikey', datatype: 'string', (event, payload) ->
-    component.client = stripe payload if event is 'data'
-  component.outPorts.add 'customer', datatype: 'object'
-  component.outPorts.add 'error', datatype: 'object'
-  component.client = null
+  # forwarding to error would make it fail
+  # since noflo-tester receives on disconnect
+  c.forwardBrackets =
+    data: ['customer']
 
-  noflo.helpers.MultiError component, 'stripe/CreateCustomer'
-
-  component.checkRequired = (customerData, callback) ->
+  c.checkRequired = (customerData, callback) ->
+    errors = []
     unless customerData.email
-      component.error CustomError "Missing email",
+      errors.push noflo.helpers.CustomError "Missing email",
         kind: 'customer_error'
         code: 'missing_customer_email'
         param: 'email'
-    return not component.hasErrors
+    return errors
 
-  noflo.helpers.WirePattern component,
-    in: 'data'
-    out: 'customer'
-    async: true
-    forwardGroups: true
-  , (customerData, groups, out, callback) ->
-    unless CheckApiKey component, callback
-      return
+  c.process (input, output) ->
+    # copied from createCardTokem
+    return unless input.has 'data', 'apikey'
+
+    customerData = input.getData 'data'
+    client = stripe input.getData('apikey')
 
     # Validate inputs
-    unless component.checkRequired customerData
-      return callback no
+    errors = c.checkRequired customerData
+    if errors.length > 0
+      return output.done errors
 
     # Create Stripe customer
-    component.client.customers.create customerData, (err, customer) ->
-      return callback err if err
-      out.send customer
-      callback()
-
-  return component
+    client.customers.create customerData, (err, customer) ->
+      return output.done err if err
+      output.sendDone customer

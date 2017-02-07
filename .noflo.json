@@ -1,0 +1,14 @@
+{
+  "components": {
+    "Graph": "node_modules/noflo-tester/node_modules/noflo/src/components/Graph.coffee",
+    "stripe/CreateCardToken": "components/CreateCardToken.coffee",
+    "stripe/CreateCharge": "components/CreateCharge.coffee",
+    "stripe/CreateCustomer": "components/CreateCustomer.coffee",
+    "stripe/GetCharge": "components/GetCharge.coffee",
+    "stripe/ListCharges": "components/ListCharges.coffee",
+    "stripe/RefundCharge": "components/RefundCharge.coffee",
+    "stripe/RetrieveToken": "components/RetrieveToken.coffee",
+    "stripe/UpdateCharge": "components/UpdateCharge.coffee"
+  },
+  "loaders": []
+}

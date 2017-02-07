@@ -7,102 +7,91 @@
 
 noflo = require 'noflo'
 stripe = require 'stripe'
-CustomError = require '../lib/CustomError'
-CheckApiKey = require '../lib/CheckApiKey'
 
 exports.getComponent = ->
-  component = new noflo.Component
+  c = new noflo.Component
+    inPorts:
+      exec:
+        datatype: 'bang'
+        required: true
+        description: 'Runs the query passed to other ports'
+      apikey:
+        datatype: 'string'
+        required: true
+        description: 'Stripe API key'
+        control: true
+        triggering: false
+      customer:
+        datatype: 'string'
+        required: false
+        description: 'Customer ID'
+        control: true
+        triggering: false
+      created:
+        datatype: 'object'
+        required: false
+        description: 'Date filter, see stripe.com/docs/api/node#list_charges'
+        control: true
+        triggering: false
+      endingbefore:
+        datatype: 'string'
+        required: false
+        description: 'Pagination cursor, last object ID'
+        control: true
+        triggering: false
+      limit:
+        datatype: 'int'
+        required: false
+        description: 'Pagination limit, defaults to 10'
+        control: true
+        triggering: false
+      startingafter:
+        datatype: 'string'
+        required: false
+        control: true
+        triggering: false
+    outPorts:
+      charges:
+        datatype: 'array'
+        required: true
+        description: 'List of charges'
+      hasmore:
+        datatype: 'boolean'
+        required: false
+        description: 'Whether there are more results, optional'
+      error:
+        datatype: 'object'
 
-  component.inPorts.add 'exec',
-    datatype: 'bang'
-    required: true
-    description: 'Runs the query passed to other ports'
-  component.inPorts.add 'apikey',
-    datatype: 'string'
-    required: true
-    description: 'Stripe API key'
-  , (event, data) ->
-    component.client = stripe data if event is 'data'
-  component.inPorts.add 'customer',
-    datatype: 'string'
-    required: false
-    description: 'Customer ID'
-  , (event, data) ->
-    component.customer = data if event is 'data'
-  component.inPorts.add 'created',
-    datatype: 'object'
-    required: false
-    description: 'Date filter, see stripe.com/docs/api/node#list_charges'
-  , (event, data) ->
-    component.created = data if event is 'data'
-  component.inPorts.add 'endingbefore',
-    datatype: 'string'
-    required: false
-    description: 'Pagination cursor, last object ID'
-  , (event, data) ->
-    component.endingbefore = data if event is 'data'
-  component.inPorts.add 'limit',
-    datatype: 'int'
-    required: false
-    description: 'Pagination limit, defaults to 10'
-  , (event, data) ->
-    component.limit = data if event is 'data'
-  component.inPorts.add 'startingafter',
-    datatype: 'string'
-    required: false
-  , (event, data) ->
-    component.startingafter = data if event is 'data'
+  c.forwardBrackets =
+    exec: ['charges', 'hasmore', 'error']
 
-  component.outPorts.add 'charges',
-    datatype: 'array'
-    required: true
-    description: 'List of charges'
-  component.outPorts.add 'hasmore',
-    datatype: 'boolean'
-    required: false
-    description: 'Whether there are more results, optional'
-  component.outPorts.add 'error',
-    datatype: 'object'
+  c.process (input, output) ->
+    return unless input.has 'exec'
 
-  component.client = null
-  component.customer = null
-  component.created = null
-  component.endingbefore = null
-  component.limit = null
-  component.startingafter = null
+    input.getData 'exec'
+    client = stripe input.getData('apikey')
 
-  noflo.helpers.MultiError component, 'stripe/ListCharges'
-
-  noflo.helpers.WirePattern component,
-    in: 'exec'
-    out: ['charges', 'hasmore']
-    async: true
-    forwardGroups: true
-  , (options, groups, outs, callback) ->
-    unless CheckApiKey component, callback
-      return
+    customer = input.getData 'customer'
+    created = input.getData 'created'
+    endingbefore = input.getData 'endingbefore'
+    limit = input.getData 'limit'
+    startingafter = input.getData 'startingafter'
 
     # Compile the query
     query = {}
-    query.customer = component.customer if component.customer
-    query.created = component.created if component.created
-    query.endingbefore = component.endingbefore if component.endingbefore
-    query.limit = component.limit if component.limit
-    query.startingafter = component.startingafter if component.startingafter
+    query.customer = customer if customer
+    query.created = created if created
+    query.endingbefore = endingbefore if endingbefore
+    query.limit = limit if limit
+    query.startingafter = startingafter if startingafter
 
-    component.client.charges.list query, (err, charges) ->
-      return callback err if err
+    client.charges.list query, (err, charges) ->
+      return output.done err if err
 
-      # Reset state to avoid side effects
-      component.customer = null
-      component.created = null
-      component.endingbefore = null
-      component.limit = null
-      component.startingafter = null
+      output.send charges: charges.data
 
-      outs.charges.send charges.data
-      if component.outPorts.hasmore.isAttached()
-        outs.hasmore.send charges.has_more
-      callback()
+      if output.ports.hasmore.isAttached()
+        output.send hasmore: charges.has_more
 
-  return component
+      output.done()
+
