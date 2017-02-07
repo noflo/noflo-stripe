@@ -68,8 +68,7 @@ exports.getComponent = ->
   c.process (input, output) ->
     return unless input.has 'exec'
 
-    input.buffer.set 'exec', []
-
+    input.getData 'exec'
     client = stripe input.getData('apikey')
 
     customer = input.getData 'customer'
