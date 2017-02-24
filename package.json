@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/svetly/noflo-stripe.git"
+    "url": "git://github.com/noflo/noflo-stripe.git"
   },
   "dependencies": {
     "coffee-script": "^1.10.0",
