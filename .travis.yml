@@ -1,9 +1,12 @@
 language: node_js
 node_js:
-  - 0.6
-  - 0.8
-
+- '4.6'
 script: npm test
-
-notifications:
-  irc: "irc.freenode.org#fbp"
+deploy:
+  provider: npm
+  email: henri.bergius@iki.fi
+  api_key:
+    secure: MXCrfkdpbvvwUuv/HR5fMaUSeA4GzraBLbbZVAEWFXtMRl+hBja0hbByknK7ulM3yVEVuK4vDcAXq0NmcCU/Mtr0iJns2tMEZ3QIPLpp8GiVp9xCCVnJ8VzSIrkeoIX93IcaxEOjEaqLEMDzTPP9XTslDVT3rLKJaOc5SzLRStE=
+  on:
+    tags: true
+    repo: noflo/noflo-stripe
