@@ -2,7 +2,7 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "chai": "^3.3.0",
     "coffeelint": "^1.12.1",
     "mocha": "^3.2.0",
-    "noflo-tester": "^0.1.0-beta1"
+    "noflo-tester": "^0.1.0"
   },
   "noflo": {
     "icon": "credit-card",
