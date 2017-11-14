@@ -2,7 +2,7 @@
   "name": "noflo-stripe",
   "description": "Stripe component for the NoFlo flow-based programming environment",
   "author": "Svetly Metodiev <svetly@gmail.com>",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -26,5 +26,9 @@
   "scripts": {
     "pretest": "./node_modules/.bin/coffeelint -r components spec",
     "test": "mocha --require coffeescript/register -R spec -t 10000 spec/*.coffee"
-  }
+  },
+  "keywords": [
+    "noflo",
+    "stripe"
+  ]
 }
