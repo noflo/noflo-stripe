@@ -9,32 +9,22 @@
     "url": "git://github.com/noflo/noflo-stripe.git"
   },
   "dependencies": {
-    "coffee-script": "^1.10.0",
-    "noflo": "0.x >= 0.8",
+    "noflo": "^1.0.0",
     "stripe": "^4.12.0",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
     "chai": "^4.0.0",
-    "coffeelint": "^1.12.1",
-    "mocha": "^3.2.0",
-    "noflo-tester": "^0.1.0-beta1"
+    "coffeescript": "^2.0.2",
+    "coffeelint": "^2.0.7",
+    "mocha": "^4.0.0",
+    "noflo-wrapper": "^0.2.1"
   },
   "noflo": {
-    "icon": "credit-card",
-    "components": {
-      "CreateCardToken": "components/CreateCardToken.coffee",
-      "CreateCharge": "components/CreateCharge.coffee",
-      "CreateCustomer": "components/CreateCustomer.coffee",
-      "GetCharge": "components/GetCharge.coffee",
-      "ListCharges": "components/ListCharges.coffee",
-      "RefundCharge": "components/RefundCharge.coffee",
-      "RetrieveToken": "components/RetrieveToken.coffee",
-      "UpdateCharge": "components/UpdateCharge.coffee"
-    }
+    "icon": "credit-card"
   },
   "scripts": {
     "pretest": "./node_modules/.bin/coffeelint -r components spec",
-    "test": "mocha --compilers coffee:coffee-script/register --require coffee-script/register -R spec -t 10000 spec/*.coffee"
+    "test": "mocha --require coffeescript/register -R spec -t 10000 spec/*.coffee"
   }
 }

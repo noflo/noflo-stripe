@@ -1,7 +1,7 @@
 noflo = require 'noflo'
 chai = require 'chai'
 uuid = require 'uuid'
-Tester = require 'noflo-tester'
+Tester = require 'noflo-wrapper'
 
 describe 'Tokens', ->
   apiKey = process.env.STRIPE_TOKEN or 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'
