@@ -1,7 +1,7 @@
 noflo = require 'noflo'
 chai = require 'chai'
 uuid = require 'uuid'
-Tester = require 'noflo-tester'
+Tester = require 'noflo-wrapper'
 c = require './../components/CreateCustomer.coffee'
 
 describe 'Customers', ->
