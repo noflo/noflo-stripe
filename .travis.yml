@@ -1,12 +1,12 @@
 language: node_js
 node_js:
-- '4.6'
+- '6'
 script: npm test
 deploy:
   provider: npm
   email: henri.bergius@iki.fi
   api_key:
-    secure: MXCrfkdpbvvwUuv/HR5fMaUSeA4GzraBLbbZVAEWFXtMRl+hBja0hbByknK7ulM3yVEVuK4vDcAXq0NmcCU/Mtr0iJns2tMEZ3QIPLpp8GiVp9xCCVnJ8VzSIrkeoIX93IcaxEOjEaqLEMDzTPP9XTslDVT3rLKJaOc5SzLRStE=
+    secure: CJdxoog/jzW122hU0M9GEpTuf6VEN/ro9GCZs9MK3thmW8WLu9yjiWxOGVAnGojuvzymsTT32rgcXguwQo5URmMGzUFFP+KZdRMHjCZ0akw5gxeb3TEieR5bjXZgjQB2avZdIxHbQKaJehiOtaTjXdP91AAo/GbLAYjpqHVlQKQ=
   on:
     tags: true
     repo: noflo/noflo-stripe
